@@ -5,49 +5,49 @@ set -o nounset
 set -o errexit
 
 tmpfs_and_mount() {
-  FOLDER_PATH=$1
+    FOLDER_PATH=$1
 
-  mkdir -p ${FOLDER_PATH}
-  echo "tmpfs ${FOLDER_PATH} tmpfs mode=1777,strictatime,noexec,nodev,nosuid 0 0" >> /etc/fstab
-  mount -a
+    mkdir -p ${FOLDER_PATH}
+    echo "tmpfs ${FOLDER_PATH} tmpfs mode=1777,strictatime,noexec,nodev,nosuid 0 0" >>/etc/fstab
+    mount -a
 }
 
 unload_module() {
-  local fsname=$1
+    local fsname=$1
 
-  rmmod "${fsname}" || true
-  mkdir -p /etc/modprobe.d/
-  echo "install ${fsname} /bin/true" > "/etc/modprobe.d/${fsname}.conf"
+    rmmod "${fsname}" || true
+    mkdir -p /etc/modprobe.d/
+    echo "install ${fsname} /bin/true" >"/etc/modprobe.d/${fsname}.conf"
 }
 
 systemd_disable() {
-  local service_name=$1
+    local service_name=$1
 
-  if systemctl is-enabled $service_name; then
-    systemctl disable $service_name
-  fi
+    if systemctl is-enabled $service_name; then
+        systemctl disable $service_name
+    fi
 }
 
 yum_remove() {
-  local package_name=$1
+    local package_name=$1
 
-  if rpm -q $package_name; then
-    yum remove -y $package_name
-  fi
+    if rpm -q $package_name; then
+        yum remove -y $package_name
+    fi
 }
 
 sysctl_entry() {
-  local entry=$1
+    local entry=$1
 
-  echo "$entry" >> /etc/sysctl.d/cis.conf
+    echo "$entry" >>/etc/sysctl.d/cis.conf
 }
 
 set_conf_value() {
-  local key=$1
-  local value=$2
-  local file=$3
+    local key=$1
+    local value=$2
+    local file=$3
 
-  sed -i "s/^\(${key}\s*=\s*\).*$/\1${value}/" $file
+    sed -i "s/^\(${key}\s*=\s*\).*$/\1${value}/" $file
 }
 
 echo "1.1.1.1 - ensure mounting of cramfs filesystems is disabled"
@@ -62,7 +62,7 @@ unload_module udf
 echo "1.1.2 - 1.1.5 - ensure /tmp is configured noexec,nodev,nosuid options set on  /tmp partition"
 systemctl unmask tmp.mount && systemctl enable tmp.mount
 
-cat > /etc/systemd/system/local-fs.target.wants/tmp.mount <<EOF
+cat >/etc/systemd/system/local-fs.target.wants/tmp.mount <<EOF
 [Unit]
 Description=Temporary Directory
 Documentation=man:hier(7)
@@ -86,7 +86,7 @@ EOF
 systemctl daemon-reload && systemctl restart tmp.mount
 
 echo "1.1.6 - 1.1.9 - ensure noexec,nodev,nosuid option set on /dev/shm"
-echo "tmpfs  /dev/shm  tmpfs  defaults,nodev,nosuid,noexec  0 0" >> /etc/fstab
+echo "tmpfs  /dev/shm  tmpfs  defaults,nodev,nosuid,noexec  0 0" >>/etc/fstab
 mount -a
 
 echo "1.1.10 - ensure separate partition exists for /var"
@@ -108,7 +108,7 @@ echo "1.1.23 - disable automounting"
 yum_remove autofs
 
 echo "1.1.24 - disable usb storage"
-echo "install usb-storage /bin/true" > /etc/modprobe.d/usb_storage.conf
+echo "install usb-storage /bin/true" >/etc/modprobe.d/usb_storage.conf
 
 echo "1.2.1 - ensure GPG keys are configured"
 rpm -q gpg-pubkey --qf '%{name}-%{version}-%{release} --> %{summary}\n'
@@ -126,14 +126,14 @@ aide --init
 mv /var/lib/aide/aide.db.new.gz /var/lib/aide/aide.db.gz
 
 echo "1.3.2 - ensure filesystem integrity is regularly checked"
-echo "0 5 * * * /usr/sbin/aide --check" > /etc/cron.d/aide
+echo "0 5 * * * /usr/sbin/aide --check" >/etc/cron.d/aide
 
 echo "1.4.1 - ensure permissions on bootloader config are configured"
 chown root:root /boot/grub2/grub.cfg
 chmod og-rwx /boot/grub2/grub.cfg
 
 echo "1.4.2 - ensure authentication required for single user mode"
-cat > /usr/lib/systemd/system/rescue.service <<EOF
+cat >/usr/lib/systemd/system/rescue.service <<EOF
 [Unit]
 Description=Rescue Shell
 Documentation=man:sulogin(8)
@@ -157,7 +157,7 @@ IgnoreSIGPIPE=no
 SendSIGHUP=yes
 EOF
 
-cat > /usr/lib/systemd/system/emergency.service <<EOF
+cat >/usr/lib/systemd/system/emergency.service <<EOF
 [Unit]
 Description=Emergency Shell
 Documentation=man:sulogin(8)
@@ -184,7 +184,7 @@ EOF
 systemctl daemon-reload
 
 echo "1.5.1 - ensure core dumps are restricted"
-echo "* hard core 0" > /etc/security/limits.d/cis.conf
+echo "* hard core 0" >/etc/security/limits.d/cis.conf
 sysctl_entry "fs.suid_dumpable = 0"
 
 echo "1.5.2 - ensure XD/NX support is enabled"
@@ -200,7 +200,7 @@ sed -i 's/SELINUX=disabled/SELINUX=enforcing/g' /etc/selinux/config
 
 echo "1.7.1.1 - ensure message of the day is configured properly"
 rm -f /etc/cron.d/update-motd
-cat > /etc/update-motd.d/30-banner <<"OUTEREOF"
+cat >/etc/update-motd.d/30-banner <<"OUTEREOF"
 #!/bin/sh
 cat <<"EOF"
 You are accessing a U.S. Government (USG) Information System (IS) that is provided for USG-authorized use only.
@@ -215,7 +215,7 @@ EOF
 OUTEREOF
 
 echo "1.7.1.2 - ensure local login warning banner is configured properly"
-cat > /etc/issue <<EOF
+cat >/etc/issue <<EOF
 You are accessing a U.S. Government (USG) Information System (IS) that is provided for USG-authorized use only.
 
 By using this IS (which includes any device attached to this IS), you consent to the following conditions:
@@ -227,7 +227,7 @@ By using this IS (which includes any device attached to this IS), you consent to
 EOF
 
 echo "1.7.1.3 - ensure remote login warning banner is configured properly"
-cat > /etc/issue.net <<EOF
+cat >/etc/issue.net <<EOF
 You are accessing a U.S. Government (USG) Information System (IS) that is provided for USG-authorized use only.
 
 By using this IS (which includes any device attached to this IS), you consent to the following conditions:
@@ -369,107 +369,107 @@ sed -i 's/^\(GRUB_CMDLINE_LINUX_DEFAULT=.*\)"$/\1 audit=1"/' /etc/default/grub
 grub2-mkconfig -o /etc/grub2.cfg
 
 echo "4.1.4 - ensure events that modify date and time information are collected"
-echo "-a always,exit -F arch=b64 -S adjtimex -S settimeofday -k time-change" >> /etc/audit/rules.d/cis.rules
-echo "-a always,exit -F arch=b32 -S adjtimex -S settimeofday -S stime -k time-change" >> /etc/audit/rules.d/cis.rules
-echo "-a always,exit -F arch=b64 -S clock_settime -k time-change" >> /etc/audit/rules.d/cis.rules
-echo "-a always,exit -F arch=b32 -S clock_settime -k time-change" >> /etc/audit/rules.d/cis.rules
-echo "-w /etc/localtime -p wa -k time-change" >> /etc/audit/rules.d/cis.rules
+echo "-a always,exit -F arch=b64 -S adjtimex -S settimeofday -k time-change" >>/etc/audit/rules.d/cis.rules
+echo "-a always,exit -F arch=b32 -S adjtimex -S settimeofday -S stime -k time-change" >>/etc/audit/rules.d/cis.rules
+echo "-a always,exit -F arch=b64 -S clock_settime -k time-change" >>/etc/audit/rules.d/cis.rules
+echo "-a always,exit -F arch=b32 -S clock_settime -k time-change" >>/etc/audit/rules.d/cis.rules
+echo "-w /etc/localtime -p wa -k time-change" >>/etc/audit/rules.d/cis.rules
 
 echo "4.1.5 - ensure events that modify user/group information are collected"
-echo "-w /etc/group -p wa -k identity" >> /etc/audit/rules.d/cis.rules
-echo "-w /etc/passwd -p wa -k identity" >> /etc/audit/rules.d/cis.rules
-echo "-w /etc/gshadow -p wa -k identity" >> /etc/audit/rules.d/cis.rules
-echo "-w /etc/shadow -p wa -k identity" >> /etc/audit/rules.d/cis.rules
-echo "-w /etc/security/opasswd -p wa -k identity" >> /etc/audit/rules.d/cis.rules
+echo "-w /etc/group -p wa -k identity" >>/etc/audit/rules.d/cis.rules
+echo "-w /etc/passwd -p wa -k identity" >>/etc/audit/rules.d/cis.rules
+echo "-w /etc/gshadow -p wa -k identity" >>/etc/audit/rules.d/cis.rules
+echo "-w /etc/shadow -p wa -k identity" >>/etc/audit/rules.d/cis.rules
+echo "-w /etc/security/opasswd -p wa -k identity" >>/etc/audit/rules.d/cis.rules
 
 echo "4.1.6 - ensure events that modify the system's network environment are collected"
-echo "-a always,exit -F arch=b64 -S sethostname -S setdomainname -k system-locale" >> /etc/audit/rules.d/cis.rules
-echo "-a always,exit -F arch=b32 -S sethostname -S setdomainname -k system-locale" >> /etc/audit/rules.d/cis.rules
-echo "-w /etc/issue -p wa -k system-locale" >> /etc/audit/rules.d/cis.rules
-echo "-w /etc/issue.net -p wa -k system-locale" >> /etc/audit/rules.d/cis.rules
-echo "-w /etc/hosts -p wa -k system-locale" >> /etc/audit/rules.d/cis.rules
-echo "-w /etc/sysconfig/network -p wa -k system-locale" >> /etc/audit/rules.d/cis.rules
-echo "-w /etc/sysconfig/network-scripts/ -p wa -k system-locale" >> /etc/audit/rules.d/cis.rules
+echo "-a always,exit -F arch=b64 -S sethostname -S setdomainname -k system-locale" >>/etc/audit/rules.d/cis.rules
+echo "-a always,exit -F arch=b32 -S sethostname -S setdomainname -k system-locale" >>/etc/audit/rules.d/cis.rules
+echo "-w /etc/issue -p wa -k system-locale" >>/etc/audit/rules.d/cis.rules
+echo "-w /etc/issue.net -p wa -k system-locale" >>/etc/audit/rules.d/cis.rules
+echo "-w /etc/hosts -p wa -k system-locale" >>/etc/audit/rules.d/cis.rules
+echo "-w /etc/sysconfig/network -p wa -k system-locale" >>/etc/audit/rules.d/cis.rules
+echo "-w /etc/sysconfig/network-scripts/ -p wa -k system-locale" >>/etc/audit/rules.d/cis.rules
 
 echo "4.1.6 - ensure events that modify the system's network environment are collected"
-echo "-w /etc/selinux/ -p wa -k MAC-policy" >> /etc/audit/rules.d/cis.rules
-echo "-w /usr/share/selinux/ -p wa -k MAC-policy" >> /etc/audit/rules.d/cis.rules
+echo "-w /etc/selinux/ -p wa -k MAC-policy" >>/etc/audit/rules.d/cis.rules
+echo "-w /usr/share/selinux/ -p wa -k MAC-policy" >>/etc/audit/rules.d/cis.rules
 
 echo "4.1.8 - ensure login and logout events are collected"
-echo "-w /var/log/lastlog -p wa -k logins" >> /etc/audit/rules.d/cis.rules
-echo "-w /var/run/faillock/ -p wa -k logins" >> /etc/audit/rules.d/cis.rules
+echo "-w /var/log/lastlog -p wa -k logins" >>/etc/audit/rules.d/cis.rules
+echo "-w /var/run/faillock/ -p wa -k logins" >>/etc/audit/rules.d/cis.rules
 
 echo "4.1.9 - ensure session initiation information is collected"
-echo "-w /var/run/utmp -p wa -k session" >> /etc/audit/rules.d/cis.rules
-echo "-w /var/log/wtmp -p wa -k logins" >> /etc/audit/rules.d/cis.rules
-echo "-w /var/log/btmp -p wa -k logins" >> /etc/audit/rules.d/cis.rules
+echo "-w /var/run/utmp -p wa -k session" >>/etc/audit/rules.d/cis.rules
+echo "-w /var/log/wtmp -p wa -k logins" >>/etc/audit/rules.d/cis.rules
+echo "-w /var/log/btmp -p wa -k logins" >>/etc/audit/rules.d/cis.rules
 
 echo "4.1.10 - ensure discretionary access control permission modification events are collected"
-echo "-a always,exit -F arch=b64 -S chmod -S fchmod -S fchmodat -F auid>=1000 -F auid!=4294967295 -k perm_mod" >> /etc/audit/rules.d/cis.rules
-echo "-a always,exit -F arch=b32 -S chmod -S fchmod -S fchmodat -F auid>=1000 -F auid!=4294967295 -k perm_mod" >> /etc/audit/rules.d/cis.rules
-echo "-a always,exit -F arch=b64 -S chown -S fchown -S fchownat -S lchown -F auid>=1000 -F auid!=4294967295 -k perm_mod" >> /etc/audit/rules.d/cis.rules
-echo "-a always,exit -F arch=b32 -S chown -S fchown -S fchownat -S lchown -F auid>=1000 -F auid!=4294967295 -k perm_mod" >> /etc/audit/rules.d/cis.rules
-echo "-a always,exit -F arch=b64 -S setxattr -S lsetxattr -S fsetxattr -S removexattr -S lremovexattr -S fremovexattr -F auid>=1000 -F auid!=4294967295 -k perm_mod" >> /etc/audit/rules.d/cis.rules
-echo "-a always,exit -F arch=b32 -S setxattr -S lsetxattr -S fsetxattr -S removexattr -S lremovexattr -S fremovexattr -F auid>=1000 -F auid!=4294967295 -k perm_mod" >> /etc/audit/rules.d/cis.rules
+echo "-a always,exit -F arch=b64 -S chmod -S fchmod -S fchmodat -F auid>=1000 -F auid!=4294967295 -k perm_mod" >>/etc/audit/rules.d/cis.rules
+echo "-a always,exit -F arch=b32 -S chmod -S fchmod -S fchmodat -F auid>=1000 -F auid!=4294967295 -k perm_mod" >>/etc/audit/rules.d/cis.rules
+echo "-a always,exit -F arch=b64 -S chown -S fchown -S fchownat -S lchown -F auid>=1000 -F auid!=4294967295 -k perm_mod" >>/etc/audit/rules.d/cis.rules
+echo "-a always,exit -F arch=b32 -S chown -S fchown -S fchownat -S lchown -F auid>=1000 -F auid!=4294967295 -k perm_mod" >>/etc/audit/rules.d/cis.rules
+echo "-a always,exit -F arch=b64 -S setxattr -S lsetxattr -S fsetxattr -S removexattr -S lremovexattr -S fremovexattr -F auid>=1000 -F auid!=4294967295 -k perm_mod" >>/etc/audit/rules.d/cis.rules
+echo "-a always,exit -F arch=b32 -S setxattr -S lsetxattr -S fsetxattr -S removexattr -S lremovexattr -S fremovexattr -F auid>=1000 -F auid!=4294967295 -k perm_mod" >>/etc/audit/rules.d/cis.rules
 
 echo "4.1.11 - ensure unsuccessful unauthorized file access attempts are collected"
-echo "-a always,exit -F arch=b64 -S creat -S open -S openat -S truncate -S ftruncate -F exit=-EACCES -F auid>=1000 -F auid!=4294967295 -k access" >> /etc/audit/rules.d/cis.rules
-echo "-a always,exit -F arch=b32 -S creat -S open -S openat -S truncate -S ftruncate -F exit=-EACCES -F auid>=1000 -F auid!=4294967295 -k access" >> /etc/audit/rules.d/cis.rules
-echo "-a always,exit -F arch=b64 -S creat -S open -S openat -S truncate -S ftruncate -F exit=-EPERM -F auid>=1000 -F auid!=4294967295 -k access" >> /etc/audit/rules.d/cis.rules
-echo "-a always,exit -F arch=b32 -S creat -S open -S openat -S truncate -S ftruncate -F exit=-EPERM -F auid>=1000 -F auid!=4294967295 -k access" >> /etc/audit/rules.d/cis.rules
+echo "-a always,exit -F arch=b64 -S creat -S open -S openat -S truncate -S ftruncate -F exit=-EACCES -F auid>=1000 -F auid!=4294967295 -k access" >>/etc/audit/rules.d/cis.rules
+echo "-a always,exit -F arch=b32 -S creat -S open -S openat -S truncate -S ftruncate -F exit=-EACCES -F auid>=1000 -F auid!=4294967295 -k access" >>/etc/audit/rules.d/cis.rules
+echo "-a always,exit -F arch=b64 -S creat -S open -S openat -S truncate -S ftruncate -F exit=-EPERM -F auid>=1000 -F auid!=4294967295 -k access" >>/etc/audit/rules.d/cis.rules
+echo "-a always,exit -F arch=b32 -S creat -S open -S openat -S truncate -S ftruncate -F exit=-EPERM -F auid>=1000 -F auid!=4294967295 -k access" >>/etc/audit/rules.d/cis.rules
 
 echo "4.1.12 - ensure use of privileged commands is collected"
 find / -xdev \( -perm -4000 -o -perm -2000 \) -type f | awk '{print \
 "-a always,exit -F path=" $1 " -F perm=x -F auid>=1000 -F auid!=4294967295 \
--k privileged" }' >> /etc/audit/rules.d/cis.rules
+-k privileged" }' >>/etc/audit/rules.d/cis.rules
 
 echo "4.1.13 - ensure successful file system mounts are collected"
-echo "-a always,exit -F arch=b64 -S mount -F auid>=1000 -F auid!=4294967295 -k mounts" >> /etc/audit/rules.d/cis.rules
-echo "-a always,exit -F arch=b32 -S mount -F auid>=1000 -F auid!=4294967295 -k mounts" >> /etc/audit/rules.d/cis.rules
+echo "-a always,exit -F arch=b64 -S mount -F auid>=1000 -F auid!=4294967295 -k mounts" >>/etc/audit/rules.d/cis.rules
+echo "-a always,exit -F arch=b32 -S mount -F auid>=1000 -F auid!=4294967295 -k mounts" >>/etc/audit/rules.d/cis.rules
 
 echo "4.1.14 - ensure file deletion events by users are collected"
-echo "-a always,exit -F arch=b64 -S unlink -S unlinkat -S rename -S renameat -F auid>=1000 -F auid!=4294967295 -k delete" >> /etc/audit/rules.d/cis.rules
-echo "-a always,exit -F arch=b32 -S unlink -S unlinkat -S rename -S renameat -F auid>=1000 -F auid!=4294967295 -k delete" >> /etc/audit/rules.d/cis.rules
+echo "-a always,exit -F arch=b64 -S unlink -S unlinkat -S rename -S renameat -F auid>=1000 -F auid!=4294967295 -k delete" >>/etc/audit/rules.d/cis.rules
+echo "-a always,exit -F arch=b32 -S unlink -S unlinkat -S rename -S renameat -F auid>=1000 -F auid!=4294967295 -k delete" >>/etc/audit/rules.d/cis.rules
 
 echo "4.1.15 - ensure changes to system administration scope (sudoers) is collected"
-echo "-w /etc/sudoers -p wa -k scope" >> /etc/audit/rules.d/cis.rules
-echo "-w /etc/sudoers.d/ -p wa -k scope" >> /etc/audit/rules.d/cis.rules
+echo "-w /etc/sudoers -p wa -k scope" >>/etc/audit/rules.d/cis.rules
+echo "-w /etc/sudoers.d/ -p wa -k scope" >>/etc/audit/rules.d/cis.rules
 
 echo "4.1.16 - ensure system administrator actions (sudolog) are collected"
-echo "-w /var/log/sudo.log -p wa -k actions" >> /etc/audit/rules.d/cis.rules
+echo "-w /var/log/sudo.log -p wa -k actions" >>/etc/audit/rules.d/cis.rules
 
 echo "4.1.17 - ensure kernel module loading and unloading is collected"
-echo "-w /sbin/insmod -p x -k modules" >> /etc/audit/rules.d/cis.rules
-echo "-w /sbin/rmmod -p x -k modules" >> /etc/audit/rules.d/cis.rules
-echo "-w /sbin/modprobe -p x -k modules" >> /etc/audit/rules.d/cis.rules
-echo "-a always,exit -F arch=b64 -S init_module -S delete_module -k modules" >> /etc/audit/rules.d/cis.rules
+echo "-w /sbin/insmod -p x -k modules" >>/etc/audit/rules.d/cis.rules
+echo "-w /sbin/rmmod -p x -k modules" >>/etc/audit/rules.d/cis.rules
+echo "-w /sbin/modprobe -p x -k modules" >>/etc/audit/rules.d/cis.rules
+echo "-a always,exit -F arch=b64 -S init_module -S delete_module -k modules" >>/etc/audit/rules.d/cis.rules
 
 echo "4.1.18 - ensure the audit configuration is immutable"
-echo "-e 2" >> /etc/audit/rules.d/cis.rules
+echo "-e 2" >>/etc/audit/rules.d/cis.rules
 
 echo "4.2.1.1 - ensure rsyslog Service is enabled"
 yum install -y rsyslog
 systemctl enable rsyslog
 
 echo "4.2.1.2 - ensure logging is configured"
-echo "*.emerg                                  :omusrmsg:*" >> /etc/rsyslog.d/cis.conf
-echo "mail.*                                  -/var/log/mail" >> /etc/rsyslog.d/cis.conf
-echo "mail.info                               -/var/log/mail.info" >> /etc/rsyslog.d/cis.conf
-echo "mail.warning                            -/var/log/mail.warn" >> /etc/rsyslog.d/cis.conf
-echo "mail.err                                 /var/log/mail.err" >> /etc/rsyslog.d/cis.conf
-echo "news.crit                               -/var/log/news/news.crit" >> /etc/rsyslog.d/cis.conf
-echo "news.err                                -/var/log/news/news.err" >> /etc/rsyslog.d/cis.conf
-echo "news.notice                             -/var/log/news/news.notice" >> /etc/rsyslog.d/cis.conf
-echo "*.=warning;*.=err                       -/var/log/warn" >> /etc/rsyslog.d/cis.conf
-echo "*.crit                                   /var/log/warn" >> /etc/rsyslog.d/cis.conf
-echo "*.*;mail.none;news.none                 -/var/log/messages" >> /etc/rsyslog.d/cis.conf
-echo "local0,local1.*                         -/var/log/localmessages" >> /etc/rsyslog.d/cis.conf
-echo "local2,local3.*                         -/var/log/localmessages" >> /etc/rsyslog.d/cis.conf
-echo "local4,local5.*                         -/var/log/localmessages" >> /etc/rsyslog.d/cis.conf
-echo "local6,local7.*                         -/var/log/localmessages" >> /etc/rsyslog.d/cis.conf
+echo "*.emerg                                  :omusrmsg:*" >>/etc/rsyslog.d/cis.conf
+echo "mail.*                                  -/var/log/mail" >>/etc/rsyslog.d/cis.conf
+echo "mail.info                               -/var/log/mail.info" >>/etc/rsyslog.d/cis.conf
+echo "mail.warning                            -/var/log/mail.warn" >>/etc/rsyslog.d/cis.conf
+echo "mail.err                                 /var/log/mail.err" >>/etc/rsyslog.d/cis.conf
+echo "news.crit                               -/var/log/news/news.crit" >>/etc/rsyslog.d/cis.conf
+echo "news.err                                -/var/log/news/news.err" >>/etc/rsyslog.d/cis.conf
+echo "news.notice                             -/var/log/news/news.notice" >>/etc/rsyslog.d/cis.conf
+echo "*.=warning;*.=err                       -/var/log/warn" >>/etc/rsyslog.d/cis.conf
+echo "*.crit                                   /var/log/warn" >>/etc/rsyslog.d/cis.conf
+echo "*.*;mail.none;news.none                 -/var/log/messages" >>/etc/rsyslog.d/cis.conf
+echo "local0,local1.*                         -/var/log/localmessages" >>/etc/rsyslog.d/cis.conf
+echo "local2,local3.*                         -/var/log/localmessages" >>/etc/rsyslog.d/cis.conf
+echo "local4,local5.*                         -/var/log/localmessages" >>/etc/rsyslog.d/cis.conf
+echo "local6,local7.*                         -/var/log/localmessages" >>/etc/rsyslog.d/cis.conf
 
 echo "4.2.1.3 - ensure rsyslog default file permissions configured"
-echo "\$FileCreateMode 0640" >> /etc/rsyslog.d/cis.conf
+echo '$FileCreateMode 0640' >>/etc/rsyslog.d/cis.conf
 
 echo "4.2.1.4 - ensure rsyslog is configured to send logs to a remote log host"
 echo "[not scored] - customer responsible for this configuration"
@@ -482,27 +482,27 @@ yum install -y syslog-ng
 systemctl enable syslog-ng && systemctl start syslog-ng
 
 echo "4.2.2.2 - Ensure logging is configured"
-echo "log { source(src); source(chroots); filter(f_console); destination(console); };" >> /etc/syslog-ng/conf.d/cis.conf
-echo "log { source(src); source(chroots); filter(f_console); destination(xconsole); };" >> /etc/syslog-ng/conf.d/cis.conf
-echo "log { source(src); source(chroots); filter(f_newscrit); destination(newscrit); };" >> /etc/syslog-ng/conf.d/cis.conf
-echo "log { source(src); source(chroots); filter(f_newserr); destination(newserr); };" >> /etc/syslog-ng/conf.d/cis.conf
-echo "log { source(src); source(chroots); filter(f_newsnotice); destination(newsnotice); };" >> /etc/syslog-ng/conf.d/cis.conf
-echo "log { source(src); source(chroots); filter(f_mailinfo); destination(mailinfo); };" >> /etc/syslog-ng/conf.d/cis.conf
-echo "log { source(src); source(chroots); filter(f_mailwarn); destination(mailwarn); };" >> /etc/syslog-ng/conf.d/cis.conf
-echo "log { source(src); source(chroots); filter(f_mailerr);  destination(mailerr); };" >> /etc/syslog-ng/conf.d/cis.conf
-echo "log { source(src); source(chroots); filter(f_mail); destination(mail); };" >> /etc/syslog-ng/conf.d/cis.conf
-echo "log { source(src); source(chroots); filter(f_acpid); destination(acpid); flags(final); };" >> /etc/syslog-ng/conf.d/cis.conf
-echo "log { source(src); source(chroots); filter(f_acpid_full); destination(devnull); flags(final); };" >> /etc/syslog-ng/conf.d/cis.conf
-echo "log { source(src); source(chroots); filter(f_acpid_old); destination(acpid); flags(final); };" >> /etc/syslog-ng/conf.d/cis.conf
-echo "log { source(src); source(chroots); filter(f_netmgm); destination(netmgm); flags(final); };" >> /etc/syslog-ng/conf.d/cis.conf
-echo "log { source(src); source(chroots); filter(f_local); destination(localmessages); };" >> /etc/syslog-ng/conf.d/cis.conf
-echo "log { source(src); source(chroots); filter(f_messages); destination(messages); };" >> /etc/syslog-ng/conf.d/cis.conf
-echo "log { source(src); source(chroots); filter(f_iptables); destination(firewall); };" >> /etc/syslog-ng/conf.d/cis.conf
-echo "log { source(src); source(chroots); filter(f_warn); destination(warn); };" >> /etc/syslog-ng/conf.d/cis.conf
+echo "log { source(src); source(chroots); filter(f_console); destination(console); };" >>/etc/syslog-ng/conf.d/cis.conf
+echo "log { source(src); source(chroots); filter(f_console); destination(xconsole); };" >>/etc/syslog-ng/conf.d/cis.conf
+echo "log { source(src); source(chroots); filter(f_newscrit); destination(newscrit); };" >>/etc/syslog-ng/conf.d/cis.conf
+echo "log { source(src); source(chroots); filter(f_newserr); destination(newserr); };" >>/etc/syslog-ng/conf.d/cis.conf
+echo "log { source(src); source(chroots); filter(f_newsnotice); destination(newsnotice); };" >>/etc/syslog-ng/conf.d/cis.conf
+echo "log { source(src); source(chroots); filter(f_mailinfo); destination(mailinfo); };" >>/etc/syslog-ng/conf.d/cis.conf
+echo "log { source(src); source(chroots); filter(f_mailwarn); destination(mailwarn); };" >>/etc/syslog-ng/conf.d/cis.conf
+echo "log { source(src); source(chroots); filter(f_mailerr);  destination(mailerr); };" >>/etc/syslog-ng/conf.d/cis.conf
+echo "log { source(src); source(chroots); filter(f_mail); destination(mail); };" >>/etc/syslog-ng/conf.d/cis.conf
+echo "log { source(src); source(chroots); filter(f_acpid); destination(acpid); flags(final); };" >>/etc/syslog-ng/conf.d/cis.conf
+echo "log { source(src); source(chroots); filter(f_acpid_full); destination(devnull); flags(final); };" >>/etc/syslog-ng/conf.d/cis.conf
+echo "log { source(src); source(chroots); filter(f_acpid_old); destination(acpid); flags(final); };" >>/etc/syslog-ng/conf.d/cis.conf
+echo "log { source(src); source(chroots); filter(f_netmgm); destination(netmgm); flags(final); };" >>/etc/syslog-ng/conf.d/cis.conf
+echo "log { source(src); source(chroots); filter(f_local); destination(localmessages); };" >>/etc/syslog-ng/conf.d/cis.conf
+echo "log { source(src); source(chroots); filter(f_messages); destination(messages); };" >>/etc/syslog-ng/conf.d/cis.conf
+echo "log { source(src); source(chroots); filter(f_iptables); destination(firewall); };" >>/etc/syslog-ng/conf.d/cis.conf
+echo "log { source(src); source(chroots); filter(f_warn); destination(warn); };" >>/etc/syslog-ng/conf.d/cis.conf
 pkill -HUP syslog-ng
 
 echo "4.2.2.3 - ensure syslog-ng default file permissions configured"
-echo "options { chain_hostnames(off); flush_lines(0); perm(0640); stats_freq(3600); threaded(yes); };" >> /etc/syslog-ng/conf.d/cis.conf
+echo "options { chain_hostnames(off); flush_lines(0); perm(0640); stats_freq(3600); threaded(yes); };" >>/etc/syslog-ng/conf.d/cis.conf
 
 echo "4.2.2.4 - ensure syslog-ng is configured to send logs to a remote log host"
 echo "[not scored] - customer responsible for this configuration"
@@ -577,7 +577,7 @@ find /etc/ssh -xdev -type f -name 'ssh_host_*_key.pub' -exec chmod 0644 {} \;
 find /etc/ssh -xdev -type f -name 'ssh_host_*_key.pub' -exec chown root:root {} \;
 
 echo "5.2.3 - 5.2.17, 5.2.19 - SSH Server Configuration"
-cat > /etc/ssh/sshd_config <<EOF
+cat >/etc/ssh/sshd_config <<EOF
 # Default Configuration
 HostKey /etc/ssh/ssh_host_rsa_key
 HostKey /etc/ssh/ssh_host_ecdsa_key
@@ -620,7 +620,7 @@ echo "5.2.18 - ensure SSH access is limited"
 echo "[not scored] - customer responsible for this configuration"
 
 echo "5.3.1 - ensure password creation requirements are configured"
-cat > /etc/security/pwquality.conf <<EOF
+cat >/etc/security/pwquality.conf <<EOF
 minlen = 14
 dcredit = -1
 ucredit = -1
@@ -629,7 +629,7 @@ lcredit = -1
 EOF
 
 echo "5.3.2 - 5.3.4 - Configure PAM"
-cat > /etc/pam.d/password-auth <<EOF
+cat >/etc/pam.d/password-auth <<EOF
 auth        required      pam_env.so
 auth        sufficient    pam_unix.so try_first_pass nullok
 auth        required      pam_deny.so
@@ -651,7 +651,7 @@ auth     [default=die] pam_faillock.so authfail audit deny=5 unlock_time=900
 auth     sufficient pam_faillock.so authsucc audit deny=5 unlock_time=900
 EOF
 
-cat > /etc/pam.d/system-auth <<EOF
+cat >/etc/pam.d/system-auth <<EOF
 auth        required      pam_env.so
 auth        sufficient    pam_unix.so try_first_pass nullok
 auth        required      pam_deny.so
@@ -695,22 +695,22 @@ echo "5.4.3 - ensure default group for the root account is GID 0"
 grep "^root:" /etc/passwd | cut -f4 -d:
 
 echo "5.4.4 - ensure default user umask is 027 or more restrictive"
-echo "umask 027" >> /etc/bashrc
-echo "umask 027" >> /etc/profile
+echo "umask 027" >>/etc/bashrc
+echo "umask 027" >>/etc/profile
 # Just adding the umask isn't enough, all existing entries need to be fixed as
 # well.
 sed -i -e 's/\bumask\s\+\(002\|022\)/umask 027/' \
-  /etc/bashrc /etc/profile /etc/profile.d/*.sh
+    /etc/bashrc /etc/profile /etc/profile.d/*.sh
 
 echo "5.4.5 - ensure default user shell timeout is 900 seconds or less"
-echo "TMOUT=600" >> /etc/bashrc
-echo "TMOUT=600" >> /etc/profile
+echo "TMOUT=600" >>/etc/bashrc
+echo "TMOUT=600" >>/etc/profile
 
 echo "5.5 - ensure root login is restricted to system console"
 cat /etc/securetty
 
 echo "5.6 - ensure access to the su command is restricted"
-echo "auth required pam_wheel.so use_uid" >> /etc/pam.d/su
+echo "auth required pam_wheel.so use_uid" >>/etc/pam.d/su
 
 echo "6.1.2 - ensure permissions on /etc/passwd are configured"
 chown root:root /etc/passwd

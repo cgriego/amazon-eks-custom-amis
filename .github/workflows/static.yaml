@@ -1,0 +1,14 @@
+name: Static Checks
+
+on:
+  - pull_request
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Run static checks
+        run: make static-check

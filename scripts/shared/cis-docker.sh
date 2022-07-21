@@ -29,24 +29,24 @@ echo "1.2.2 - ensure only trusted users are allowed to control Docker daemon"
 getent group docker
 
 echo "1.2.3 - ensure auditing is configured for the Docker daemon"
-echo "-w /usr/bin/dockerd -k docker" >> /etc/audit/rules.d/docker.rules
-echo "-w /usr/bin/docker -k docker" >> /etc/audit/rules.d/docker.rules
+echo "-w /usr/bin/dockerd -k docker" >>/etc/audit/rules.d/docker.rules
+echo "-w /usr/bin/docker -k docker" >>/etc/audit/rules.d/docker.rules
 
 echo "1.2.4 - 1.2.12 - ensure auditing is configured for Docker files and directories"
-echo "-w /var/lib/docker -k docker" >> /etc/audit/rules.d/docker.rules
-echo "-w /etc/docker -k docker" >> /etc/audit/rules.d/docker.rules
-echo "-w /etc/default/docker -k docker" >> /etc/audit/rules.d/docker.rules
-echo "-w /etc/sysconfig/docker -k docker" >> /etc/audit/rules.d/docker.rules
-echo "-w /etc/docker/daemon.json -k docker" >> /etc/audit/rules.d/docker.rules
-echo "-w /usr/bin/containerd -k docker" >> /etc/audit/rules.d/docker.rules
-echo "-w /usr/bin/docker-containerd -k docker" >> /etc/audit/rules.d/docker.rules
-echo "-w /usr/bin/runc -k docker" >> /etc/audit/rules.d/docker.rules
-echo "-w /usr/bin/docker-runc -k docker" >> /etc/audit/rules.d/docker.rules
-echo "-w ${DOCKER_SERVICE_PATH} -k docker" >> /etc/audit/rules.d/docker.rules
-echo "-w ${DOCKER_SOCKET_PATH} -k docker" >> /etc/audit/rules.d/docker.rules
+echo "-w /var/lib/docker -k docker" >>/etc/audit/rules.d/docker.rules
+echo "-w /etc/docker -k docker" >>/etc/audit/rules.d/docker.rules
+echo "-w /etc/default/docker -k docker" >>/etc/audit/rules.d/docker.rules
+echo "-w /etc/sysconfig/docker -k docker" >>/etc/audit/rules.d/docker.rules
+echo "-w /etc/docker/daemon.json -k docker" >>/etc/audit/rules.d/docker.rules
+echo "-w /usr/bin/containerd -k docker" >>/etc/audit/rules.d/docker.rules
+echo "-w /usr/bin/docker-containerd -k docker" >>/etc/audit/rules.d/docker.rules
+echo "-w /usr/bin/runc -k docker" >>/etc/audit/rules.d/docker.rules
+echo "-w /usr/bin/docker-runc -k docker" >>/etc/audit/rules.d/docker.rules
+echo "-w ${DOCKER_SERVICE_PATH} -k docker" >>/etc/audit/rules.d/docker.rules
+echo "-w ${DOCKER_SOCKET_PATH} -k docker" >>/etc/audit/rules.d/docker.rules
 
 echo "2.1 - 2.17 - ensure the docker configuration is secure"
-cat > /etc/docker/daemon.json <<EOF
+cat >/etc/docker/daemon.json <<EOF
 {
   "bridge": "none",
   "log-level": "info",

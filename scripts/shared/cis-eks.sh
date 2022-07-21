@@ -23,7 +23,7 @@ echo "3.1.4 - ensure that the kubelet configuration file ownership is set to roo
 chown root:root /etc/kubernetes/kubelet/kubelet-config.json
 
 echo "3.2 - kubelet"
-cat > /etc/kubernetes/kubelet/kubelet-config.json <<EOF
+cat >/etc/kubernetes/kubelet/kubelet-config.json <<EOF
 {
   "kind": "KubeletConfiguration",
   "apiVersion": "kubelet.config.k8s.io/v1beta1",

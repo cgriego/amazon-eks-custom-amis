@@ -1,38 +1,80 @@
+SHELL = /usr/bin/env bash
 
-PACKER_VARIABLES := binary_bucket_name binary_bucket_region eks_version eks_build_date cni_plugin_version root_volume_size data_volume_size hardening_flag http_proxy https_proxy no_proxy
-VPC_ID := vpc-0e8cf1ce122b1b059
-SUBNET_ID := subnet-0eddf1d7d0f9f9772
-AWS_REGION := us-east-2
-PACKER_FILE :=
+.PHONY: help
+.DEFAULT_GOAL := help
 
-EKS_BUILD_DATE := 2020-11-02
-EKS_115_VERSION := 1.15.12
-EKS_116_VERSION := 1.16.15
-EKS_117_VERSION := 1.17.12
-EKS_118_VERSION := 1.18.9
-EKS_119_VERSION := 1.19.6
+help:
+	@awk 'BEGIN {FS = ":.*##"; printf "Usage: make \033[36m<target>\033[0m\n"} /^[a-zA-Z_-]+:.*?##/ { printf "  \033[36m%-25s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
 
-build:
-	packer build \
-		--var 'aws_region=$(AWS_REGION)' \
-		--var 'vpc_id=$(VPC_ID)' \
-		--var 'subnet_id=$(SUBNET_ID)' \
-		$(foreach packerVar,$(PACKER_VARIABLES), $(if $($(packerVar)),--var $(packerVar)='$($(packerVar))',)) \
-		$(PACKER_FILE)
+PACKER_VERSION := 1.8.2
+SHFMT_VERSION := 3.5.1
+SHELLCHECK_VERSION := 0.8.0
 
-# Amazon Linux 2
-#-----------------------------------------------------
-build-al2-1.15:
-	$(MAKE) build PACKER_FILE=amazon-eks-node-al2.json eks_version=1.15
+KERNEL := $(shell uname -s | tr A-Z a-z)
+ARCH := $(shell uname -m)
 
-build-al2-1.16:
-	$(MAKE) build PACKER_FILE=amazon-eks-node-al2.json eks_version=1.16
+ifeq (${ARCH},arm64)
+	ARCH_ALT=arm64
+endif
+ifeq (${ARCH},aarch64)
+	ARCH_ALT=arm64
+endif
+ifeq (${ARCH},x86_64)
+	ARCH_ALT=amd64
+endif
 
-build-al2-1.17:
-	$(MAKE) build PACKER_FILE=amazon-eks-node-al2.json eks_version=1.17
+PACKER_URL="https://releases.hashicorp.com/packer/${PACKER_VERSION}/packer_${PACKER_VERSION}_${KERNEL}_${ARCH_ALT}.zip"
+SHFMT_URL="https://github.com/mvdan/sh/releases/download/v${SHFMT_VERSION}/shfmt_v${SHFMT_VERSION}_${KERNEL}_${ARCH_ALT}"
+SHELLCHECK_URL="https://github.com/koalaman/shellcheck/releases/download/v${SHELLCHECK_VERSION}/shellcheck-v${SHELLCHECK_VERSION}.${KERNEL}.${ARCH}.tar.xz"
 
-build-al2-1.18:
-	$(MAKE) build PACKER_FILE=amazon-eks-node-al2.json eks_version=1.18
+##@ Tool Installation
 
-build-al2-1.19:
-	$(MAKE) build PACKER_FILE=amazon-eks-node-al2.json eks_version=1.19
+.PHONY: packer
+packer: ## Packer is a tool for creating identical machine images for multiple platforms from a single source configuration
+	@curl -fLSs ${PACKER_URL} -o ./packer.zip
+	@unzip -n ./packer.zip
+	@rm ./packer.zip
+
+.PHONY: shellcheck
+shellcheck: ## Shellcheck: Script analysis tool
+	@curl -fLSs ${SHELLCHECK_URL} -o /tmp/shellcheck.tar.xz
+	@tar -xvf /tmp/shellcheck.tar.xz -C /tmp --strip-components=1
+	@mv /tmp/shellcheck ./shellcheck
+	@rm /tmp/shellcheck.tar.xz
+
+.PHONY: shfmt
+shfmt: ## shfmt: A shell parser, formatter, and interpreter
+	@curl -fLSs ${SHFMT_URL} -o ./shfmt
+	@chmod +x ./shfmt
+
+.PHONY: clean
+clean: ## Remove temp files used for development checks
+	rm -f manifest.json
+	rm -f shellcheck
+	rm -f shfmt
+	rm -f packer
+
+##@ Static Checks
+
+.PHONY: init
+init: packer ## Initialize packer
+	./packer init .
+
+.PHONY: packer-fmt
+packer-fmt: packer ## Check packer configurations format
+	./packer fmt -check .
+
+.PHONY: validate
+validate: init ## Validate packer configurations
+	./packer validate -var .
+
+.PHONY: fmt
+fmt: packer shfmt ## Format codebase
+	./packer fmt .
+	./shfmt -l -s -w -i 4 ./*/*.sh
+
+.PHONY: static-check
+static-check: packer-fmt shfmt shellcheck ## All static checks
+	./packer validate .
+	./shfmt -d -s -w -i 4 ./*/*.sh
+	./shellcheck --severity=error --exclude=SC2045 ./*/*.sh

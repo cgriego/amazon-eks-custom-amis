@@ -29,63 +29,7 @@ get_arch() {
 }
 
 ################################################################
-# Install the AWS CLI based on the CPU architecture.
-#
-# Globals:
-#   None
-# Arguments:
-#   None
-# Outputs:
-#   0 after a successful installation
-################################################################
-install_awscliv2() {
-    local awscli_package_name="awscliv2.zip"
-
-    # download the awscli package from aws
-    curl -sL -o $awscli_package_name "https://awscli.amazonaws.com/awscli-exe-linux-$(uname -m).zip"
-
-    # unzip the package
-    unzip $awscli_package_name
-
-    # install the aws cli package
-    ./aws/install -i /usr/local/aws-cli -b /usr/bin
-
-    # cleanup the installer
-    rm -f $awscli_package_name
-}
-
-################################################################
-# Test if it is Amazon Linux 2
-#
-# Globals:
-#   None
-# Arguments:
-#   None
-# Outputs:
-#   0 - true
-#   1 - false
-################################################################
-is_amazonlinux2() {
-    [[ $(lsb_release -sd) == "\"Amazon Linux release 2"* ]]
-}
-
-################################################################
-# Install the AWS SSM agent based on the operating system
-#
-# Globals:
-#   None
-# Arguments:
-#   None
-# Outputs:
-#   0 after a successful installation
-################################################################
-install_ssmagent() {
-    yum install -y https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
-    systemctl enable amazon-ssm-agent && systemctl start amazon-ssm-agent
-}
-
-################################################################
-# Install the OpenSCAP based on the operating system
+# Install the OpenSCAP
 #
 # Globals:
 #   None
@@ -153,7 +97,6 @@ oscap_generate_fix() {
 
     # check if the tailoring file is provided
     if [ ! -z "${oscap_tailoring_file}" ]; then
-
         oscap xccdf generate fix \
             --output /etc/packer/hardening.sh \
             --tailoring-file $oscap_tailoring_file \
@@ -161,7 +104,6 @@ oscap_generate_fix() {
             --fetch-remote-resources $oscap_source
 
     else
-
         oscap xccdf generate fix \
             --output /etc/packer/hardening.sh \
             --profile $oscap_profile \
@@ -204,7 +146,7 @@ migrate_and_mount_disk() {
     mkdir -p ${folder_path}
 
     # add the mount point to fstab and mount the disk
-    echo "UUID=$(blkid -s UUID -o value ${disk_name}) ${folder_path} ext4 ${mount_options} 0 1" >> /etc/fstab
+    echo "UUID=$(blkid -s UUID -o value ${disk_name}) ${folder_path} ext4 ${mount_options} 0 1" >>/etc/fstab
     mount -a
 
     # if selinux is enabled restore the objects on it
@@ -240,10 +182,10 @@ partition_disks() {
     sleep 5
 
     # migrate and mount the existing
-    migrate_and_mount_disk "${disk_name}p1" /var            defaults,nofail,nodev
-    migrate_and_mount_disk "${disk_name}p2" /var/log        defaults,nofail,nodev,nosuid
-    migrate_and_mount_disk "${disk_name}p3" /var/log/audit  defaults,nofail,nodev,nosuid
-    migrate_and_mount_disk "${disk_name}p4" /home           defaults,nofail,nodev,nosuid
+    migrate_and_mount_disk "${disk_name}p1" /var defaults,nofail,nodev
+    migrate_and_mount_disk "${disk_name}p2" /var/log defaults,nofail,nodev,nosuid
+    migrate_and_mount_disk "${disk_name}p3" /var/log/audit defaults,nofail,nodev,nosuid
+    migrate_and_mount_disk "${disk_name}p4" /home defaults,nofail,nodev,nosuid
     migrate_and_mount_disk "${disk_name}p5" /var/lib/docker defaults,nofail
 }
 
@@ -262,18 +204,18 @@ configure_http_proxy() {
     touch /etc/environment
 
     if [ -z "${HTTP_PROXY}" ]; then
-        echo "http_proxy=${HTTP_PROXY}" >> /etc/environment
-        echo "HTTP_PROXY=${HTTP_PROXY}" >> /etc/environment
+        echo "http_proxy=${HTTP_PROXY}" >>/etc/environment
+        echo "HTTP_PROXY=${HTTP_PROXY}" >>/etc/environment
     fi
 
     if [ -z "${HTTPS_PROXY}" ]; then
-        echo "https_proxy=${HTTPS_PROXY}" >> /etc/environment
-        echo "HTTPS_PROXY=${HTTPS_PROXY}" >> /etc/environment
+        echo "https_proxy=${HTTPS_PROXY}" >>/etc/environment
+        echo "HTTPS_PROXY=${HTTPS_PROXY}" >>/etc/environment
     fi
 
     if [ -z "${NO_PROXY}" ]; then
-        echo "no_proxy=${NO_PROXY}" >> /etc/environment
-        echo "NO_PROXY=${NO_PROXY}" >> /etc/environment
+        echo "no_proxy=${NO_PROXY}" >>/etc/environment
+        echo "NO_PROXY=${NO_PROXY}" >>/etc/environment
     fi
 }
 
@@ -282,8 +224,8 @@ configure_docker_environment() {
     local docker_env_file="${docker_dir}/environment.conf"
 
     mkdir -p "${docker_dir}"
-    echo "[Service]" >> "${docker_env_file}"
-    echo "EnvironmentFile=/etc/environment" >> "${docker_env_file}"
+    echo "[Service]" >>"${docker_env_file}"
+    echo "EnvironmentFile=/etc/environment" >>"${docker_env_file}"
 }
 
 configure_kubelet_environment() {
@@ -291,6 +233,6 @@ configure_kubelet_environment() {
     local kubelet_env_file="${kubelet_dir}/environment.conf"
 
     mkdir -p "${kubelet_dir}"
-    echo "[Service]" >> "${kubelet_env_file}"
-    echo "EnvironmentFile=/etc/environment" >> "${kubelet_env_file}"
+    echo "[Service]" >>"${kubelet_env_file}"
+    echo "EnvironmentFile=/etc/environment" >>"${kubelet_env_file}"
 }

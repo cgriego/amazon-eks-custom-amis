@@ -18,5 +18,4 @@ if [ "${HARDENING_FLAG}" = "nist" ]; then
 
     # rebuild grub
     grub2-mkconfig -o /etc/grub2.cfg
-
 fi

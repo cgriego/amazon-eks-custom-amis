@@ -13,14 +13,14 @@ mkdir -p /etc/docker
 DOCKER_SELINUX_ENABLED="false"
 
 if selinuxenabled; then
-  # enable container selinux boolean
-  setsebool container_manage_cgroup on
+    # enable container selinux boolean
+    setsebool container_manage_cgroup on
 
-  # enable SELinux in the docker daemon
-  DOCKER_SELINUX_ENABLED="true"
+    # enable SELinux in the docker daemon
+    DOCKER_SELINUX_ENABLED="true"
 fi
 
-cat > /etc/docker/daemon.json <<EOF
+cat >/etc/docker/daemon.json <<EOF
 {
   "bridge": "none",
   "log-driver": "json-file",
